@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ESP32 Wi-Fi 中继器配置</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+            max-width: 500px;
+            width: 100%;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .header p {
+            opacity: 0.9;
+            font-size: 14px;
+        }
+        
+        .form-container {
+            padding: 30px;
+        }
+        
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 2px solid #f0f0f0;
+            border-radius: 10px;
+            transition: border-color 0.3s ease;
+        }
+        
+        .section:hover {
+            border-color: #667eea;
+        }
+        
+        .section h3 {
+            color: #333;
+            margin-bottom: 15px;
+            font-size: 18px;
+            display: flex;
+            align-items: center;
+        }
+        
+        .section h3::before {
+            content: '';
+            width: 4px;
+            height: 20px;
+            background: #667eea;
+            margin-right: 10px;
+            border-radius: 2px;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #555;
+            font-size: 14px;
+        }
+        
+        input[type="text"],
+        input[type="password"] {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e1e1e1;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s ease;
+            background: #fafafa;
+        }
+        
+        input[type="text"]:focus,
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #667eea;
+            background: white;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 20px;
+        }
+        
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .submit-btn:active {
+            transform: translateY(0);
+        }
+        
+        .status-message {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 20px;
+            font-weight: 500;
+            text-align: center;
+            display: none;
+        }
+        
+        .status-success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        
+        .status-error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #ffffff;
+            border-radius: 50%;
+            border-top-color: transparent;
+            animation: spin 1s ease-in-out infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        
+        .help-text {
+            font-size: 12px;
+            color: #888;
+            margin-top: 5px;
+        }
+        
+        @media (max-width: 480px) {
+            .container {
+                margin: 10px;
+            }
+            
+            .header {
+                padding: 20px;
+            }
+            
+            .form-container {
+                padding: 20px;
+            }
+            
+            .section {
+                padding: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>ESP32 Wi-Fi 中继器</h1>
+            <p>配置您的网络设置</p>
+            <p style="font-size: 12px; opacity: 0.8; margin-top: 10px;">
+                💡 提示：长按BOOT按钮5秒可恢复出厂设置<br>
+                🌐 自动跳转：访问任何网站都会自动跳转到此配置页面<br>
+                🔐 默认密码：热点默认密码为 <strong>12345678</strong>
+            </p>
+        </div>
+        
+        <div class="form-container">
+            <form id="configForm">
+                <div class="section">
+                    <h3>上游网络设置</h3>
+                    <div class="form-group">
+                        <label for="sta_ssid">网络名称 (SSID) *</label>
+                        <input type="text" id="sta_ssid" name="sta_ssid" required maxlength="31" 
+                               placeholder="输入要连接的Wi-Fi名称">
+                        <div class="help-text">请输入您要连接的Wi-Fi网络名称</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="sta_password">网络密码</label>
+                        <input type="password" id="sta_password" name="sta_password" maxlength="63" 
+                               placeholder="输入Wi-Fi密码">
+                        <div class="help-text">如果是开放网络，请留空</div>
+                    </div>
+                </div>
+                
+                <div class="section">
+                    <h3>中继器热点设置</h3>
+                    <div class="form-group">
+                        <label for="ap_ssid">热点名称 (SSID) *</label>
+                        <input type="text" id="ap_ssid" name="ap_ssid" required maxlength="31" 
+                               value="ESP32_Repeater" placeholder="输入热点名称">
+                        <div class="help-text">其他设备将看到的Wi-Fi名称</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ap_password">热点密码</label>
+                        <input type="password" id="ap_password" name="ap_password" maxlength="63"
+                               value="12345678" placeholder="设置热点密码">
+                        <div class="help-text">默认密码：12345678，建议修改为更安全的密码</div>
+                    </div>
+                    <div class="form-group">
+                        <label for="ap_mac">自定义MAC地址 (可选)</label>
+                        <input type="text" id="ap_mac" name="ap_mac" placeholder="XX:XX:XX:XX:XX:XX" 
+                               maxlength="17" pattern="^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$">
+                        <div class="help-text">格式: XX:XX:XX:XX:XX:XX，留空使用默认MAC</div>
+                    </div>
+                </div>
+                
+                <button type="submit" class="submit-btn" id="submitBtn">
+                    保存配置并重启
+                </button>
+                
+                <div id="statusMessage" class="status-message"></div>
+            </form>
+        </div>
+    </div>
+    
+    <script>
+        document.getElementById('configForm').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const submitBtn = document.getElementById('submitBtn');
+            const statusMessage = document.getElementById('statusMessage');
+            
+            // 显示加载状态
+            submitBtn.innerHTML = '<span class="loading"></span>正在保存...';
+            submitBtn.disabled = true;
+            statusMessage.style.display = 'none';
+            
+            // 收集表单数据
+            const formData = new FormData(this);
+            const config = {};
+            for (let pair of formData.entries()) {
+                config[pair[0]] = pair[1];
+            }
+            
+            // 基本验证
+            if (!config.sta_ssid.trim()) {
+                showMessage('请输入上游网络名称', 'error');
+                resetButton();
+                return;
+            }
+            
+            if (!config.ap_ssid.trim()) {
+                showMessage('请输入热点名称', 'error');
+                resetButton();
+                return;
+            }
+            
+            if (config.ap_password && config.ap_password.length < 8) {
+                showMessage('热点密码至少需要8位字符', 'error');
+                resetButton();
+                return;
+            }
+            
+            // MAC地址验证
+            if (config.ap_mac && config.ap_mac.trim()) {
+                const macPattern = /^([0-9A-Fa-f]{2}[:-]){5}([0-9A-Fa-f]{2})$/;
+                if (!macPattern.test(config.ap_mac)) {
+                    showMessage('MAC地址格式不正确', 'error');
+                    resetButton();
+                    return;
+                }
+            }
+            
+            // 发送配置
+            fetch('/config', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(config)
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    showMessage('配置保存成功！设备将在5秒后重启...', 'success');
+                    setTimeout(() => {
+                        showMessage('设备正在重启，请稍候...', 'success');
+                    }, 5000);
+                } else {
+                    showMessage('保存失败: ' + (data.error || '未知错误'), 'error');
+                    resetButton();
+                }
+            })
+            .catch(error => {
+                showMessage('网络错误: ' + error.message, 'error');
+                resetButton();
+            });
+        });
+        
+        function showMessage(message, type) {
+            const statusMessage = document.getElementById('statusMessage');
+            statusMessage.textContent = message;
+            statusMessage.className = 'status-message status-' + type;
+            statusMessage.style.display = 'block';
+        }
+        
+        function resetButton() {
+            const submitBtn = document.getElementById('submitBtn');
+            submitBtn.innerHTML = '保存配置并重启';
+            submitBtn.disabled = false;
+        }
+        
+        // MAC地址输入格式化
+        document.getElementById('ap_mac').addEventListener('input', function(e) {
+            let value = e.target.value.replace(/[^0-9A-Fa-f]/g, '');
+            let formattedValue = '';
+            for (let i = 0; i < value.length && i < 12; i++) {
+                if (i > 0 && i % 2 === 0) {
+                    formattedValue += ':';
+                }
+                formattedValue += value[i];
+            }
+            e.target.value = formattedValue.toUpperCase();
+        });
+    </script>
+</body>
+</html>
